@@ -1,7 +1,7 @@
 name = "PhantomRevealer_GizmoExtension"
 uuid = "6e16d361-b24e-494a-93f3-71642dcc5b47"
 authors = ["Wei-Shan Su <weishansu011017@gmail.com>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
