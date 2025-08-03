@@ -197,9 +197,9 @@ function read_gizmo(filename::String;
                             if ndims(A) == 1
                                 prdf[!, column] = A
                             elseif ndims(A) == 2
-                                N, K = size(A)
-                                for j in 1:K
-                                    prdf[!, string(column, "_", j)] = @view A[:, j]   # SubArray{T,1}
+                                K, N = size(A)
+                                for k in 1:K
+                                    prdf[!, string(column, "_", k)] = @view A[k, :]   # SubArray{T,1}
                                 end
                             else
                                 @warn "Skip $column: unsupported ndims=$(ndims(A))"
