@@ -192,7 +192,19 @@ function read_gizmo(filename::String;
             elseif !isempty(extra_columns)
                 for column in extra_columns
                     if !(column in ignore_column)
-                        prdf[!, column] = read(PartGroup, column)
+                        if haskey(PartGroup, column)
+                            A = read(PartGroup, column)            # A :: AbstractArray
+                            if ndims(A) == 1
+                                prdf[!, column] = A
+                            elseif ndims(A) == 2
+                                N, K = size(A)
+                                for j in 1:K
+                                    prdf[!, string(column, "_", j)] = @view A[:, j]   # SubArray{T,1}
+                                end
+                            else
+                                @warn "Skip $column: unsupported ndims=$(ndims(A))"
+                            end  
+                        end
                     end   
                 end
             end
