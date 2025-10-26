@@ -4,24 +4,24 @@
 """
 
 """
-    add_SpeciesGasMassDensity!(data::PhantomRevealerDataFrame; HydrogenFraction :: T = 0.7381, HeliumFraction :: T = 0.2485) where {T<:AbstractFloat}
+    add_SpeciesGasMassDensity!(data::PhantomRevealerDataFrame; fH :: T = 0.7381, fHe :: T = 0.2485) where {T<:AbstractFloat}
 Add the mass and density of H, He for each particles. Valid only if `data` with `data.params["PartType"] == "PartType0` (Gas particles) is provided.
 
 # Parameters
 - `data :: PhantomRevealerDataFrame`: The SPH data that is stored in `PhantomRevealerDataFrame` 
 
 # Keyword Arguments
-- `HydrogenFraction :: T = 0.7381`: Desired mass fraction of Hydrogen. Defaults to the solar value (X = 0.7381 (Asplund(2009))).
-- `HeliumFraction :: T = 0.2485`: Desired mass fraction of Helium. Defaults to the solar value (Y = 0.2485 (Asplund(2009))).
+- `fH :: T = 0.7381`: Desired mass fraction of Hydrogen. Defaults to the solar value (X = 0.7381 (Asplund(2009))).
+- `fHe :: T = 0.2485`: Desired mass fraction of Helium. Defaults to the solar value (Y = 0.2485 (Asplund(2009))).
 
 """
-function add_SpeciesGasMassDensity!(data::PhantomRevealerDataFrame; HydrogenFraction :: T = 0.7381, HeliumFraction :: T = 0.2485) where {T<:AbstractFloat}
+function add_SpeciesGasMassDensity!(data::PhantomRevealerDataFrame; fH :: T = 0.7381, fHe :: T = 0.2485) where {T<:AbstractFloat}
     if (data.params["PartType"] == "PartType0")
         m = data[!,"m"]
         ρ = data[!,"rho"]
         Ftype = eltype(m)
-        THydrogenFraction = Ftype(HydrogenFraction)
-        THeliumFraction = Ftype(HeliumFraction)
+        TfH = Ftype(fH)
+        TfHe = Ftype(fHe)
         mH    = similar(m)
         mHe   = similar(m)
         rhoH  = similar(m)
@@ -30,16 +30,19 @@ function add_SpeciesGasMassDensity!(data::PhantomRevealerDataFrame; HydrogenFrac
             @inbounds begin
                 mi = m[i]
                 ρi = ρ[i]
-                mH[i]    = THydrogenFraction * mi
-                mHe[i]   = THeliumFraction   * mi
-                rhoH[i]  = THydrogenFraction * ρi
-                rhoHe[i] = THeliumFraction   * ρi
+                mH[i]    = TfH    * mi
+                mHe[i]   = TfHe   * mi
+                rhoH[i]  = TfH    * ρi
+                rhoHe[i] = TfHe   * ρi
             end
         end
         data[!,"mH"] = mH
         data[!,"mHe"] = mHe
         data[!,"rhoH"] = rhoH
         data[!,"rhoHe"] = rhoHe
+
+        data.params["fH"] = fH
+        data.params["fHe"] = fHe
     end
 end
 
@@ -237,5 +240,26 @@ function add_Soundspeed_adiabetic!(data::PhantomRevealerDataFrame; adiabatic_ind
     if (data.params["PartType"] == "PartType0")
         cons = adiabatic_index*(adiabatic_index - 1)
         data[!,"cs"] = sqrt.(cons .* data[!,"InternalEnergy"])  # In the unit of km/s
+    end
+end
+
+"""
+    add_adiabatic_constant!(data :: PhantomRevealerDataFrame; adiabatic_index :: Float64 = 1.6666666667)
+
+Compute and add the adiabatic (entropy) constant `Aγ = (γ - 1)uρ^(1 - γ)` for each gas particle, where `u` is the internal energy per unit mass and `ρ` is the density. This constant remains invariant for adiabatic processes and characterizes the specific entropy of each fluid element.
+
+# Parameters
+- `data :: PhantomRevealerDataFrame`: The SPH data stored in `PhantomRevealerDataFrame`.
+
+# Keyword Arguments
+| Name | Default | Description |
+|:------|:----------|:-------------|
+| `adiabatic_index` | `1.6666666667` | The adiabatic index γ of the gas. Default corresponds to a non-relativistic monatomic ideal gas (γ = 5/3). |
+"""
+function add_adiabatic_constant!(data :: PhantomRevealerDataFrame; adiabatic_index :: Float64 = 1.6666666667)
+    if (data.params["PartType"] == "PartType0")
+        cons = (adiabatic_index - 1)
+        ργ = data[!, "rho"].^(-cons)
+        data[!,"Aγ"] = @. cons * data[!,"InternalEnergy"] * ργ            # In the unit of umass^(1-γ) * udist ^(3γ-1) * uv
     end
 end

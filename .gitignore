@@ -31,7 +31,7 @@ Manifest.toml
 REPLsetup.jl
 
 # Ignore test result
-*.h5
+
 *.png
 *.eps
 .DS_Store
