@@ -1,4 +1,4 @@
-function Calculate_SFR(datas::PhantomRevealerDataFrame,time_interval::Float64=0.0001)
+function Calculate_SFR(datas::ParticleDataFrame,time_interval::Float64=0.0001)
     # Output would be in (M⊙/yr)
     current_time = datas.params["Time"]
     ntime = Int64(floor(current_time/time_interval))

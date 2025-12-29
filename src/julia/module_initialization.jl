@@ -3,6 +3,7 @@
 @eval using HDF5
 @eval using DataFrames
 @eval using Statistics
+@eval using Interpolations
 @eval using Base.Sys
 @eval using Base.Threads
 @eval using Base.Iterators

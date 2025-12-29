@@ -263,3 +263,15 @@ function add_adiabatic_constant!(data :: PhantomRevealerDataFrame; adiabatic_ind
         data[!,"Aγ"] = @. cons * data[!,"InternalEnergy"] * ργ            # In the unit of umass^(1-γ) * udist ^(3γ-1) * uv
     end
 end
+
+
+function add_VelocityDivergence!(data :: PhantomRevealerDataFrame)
+    if (data.params["PartType"] == "PartType0")
+        
+    end
+end
+
+function add_RadiativeCoolingTimescale!(data :: PhantomRevealerDataFrame)
+    if (data.params["PartType"] == "PartType0")
+    end
+end
