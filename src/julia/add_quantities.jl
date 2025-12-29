@@ -1,21 +1,21 @@
 """
-    Adding extra quantites to the given `PhantomRevealerDataFrame`
+    Adding extra quantites to the given `ParticleDataFrame`
         By Wei-Shan Su, 2025
 """
 
 """
-    add_SpeciesGasMassDensity!(data::PhantomRevealerDataFrame; fH :: T = 0.7381, fHe :: T = 0.2485) where {T<:AbstractFloat}
+    add_SpeciesGasMassDensity!(data::ParticleDataFrame; fH :: T = 0.7381, fHe :: T = 0.2485) where {T<:AbstractFloat}
 Add the mass and density of H, He for each particles. Valid only if `data` with `data.params["PartType"] == "PartType0` (Gas particles) is provided.
 
 # Parameters
-- `data :: PhantomRevealerDataFrame`: The SPH data that is stored in `PhantomRevealerDataFrame` 
+- `data :: ParticleDataFrame`: The SPH data that is stored in `ParticleDataFrame` 
 
 # Keyword Arguments
 - `fH :: T = 0.7381`: Desired mass fraction of Hydrogen. Defaults to the solar value (X = 0.7381 (Asplund(2009))).
 - `fHe :: T = 0.2485`: Desired mass fraction of Helium. Defaults to the solar value (Y = 0.2485 (Asplund(2009))).
 
 """
-function add_SpeciesGasMassDensity!(data::PhantomRevealerDataFrame; fH :: T = 0.7381, fHe :: T = 0.2485) where {T<:AbstractFloat}
+function add_SpeciesGasMassDensity!(data::ParticleDataFrame; fH :: T = 0.7381, fHe :: T = 0.2485) where {T<:AbstractFloat}
     if (data.params["PartType"] == "PartType0")
         m = data[!,"m"]
         ρ = data[!,"rho"]
@@ -47,16 +47,16 @@ function add_SpeciesGasMassDensity!(data::PhantomRevealerDataFrame; fH :: T = 0.
 end
 
 """
-    add_NumberDensityGas!(data::PhantomRevealerDataFrame)
+    add_NumberDensityGas!(data::ParticleDataFrame)
 
 Compute and add the number densities of hydrogen-bearing species (HI, HII, H₂), helium (He), and carbon monoxide (CO) for each gas particle.
 
 **Note**: Abundances χH2, χH+, χCO are interpreted as hydrogen-nucleus-based values (e.g., χH2 = nH2 / nH).
 
 # Parameters
-- `data::PhantomRevealerDataFrame`: The SPH data stored in a PhantomRevealerDataFrame.
+- `data::ParticleDataFrame`: The SPH data stored in a ParticleDataFrame.
 """
-function add_NumberDensityGas!(data::PhantomRevealerDataFrame)
+function add_NumberDensityGas!(data::ParticleDataFrame)
     if (data.params["PartType"] == "PartType0")
         if !hasproperty(data.dfdata, "rhoH")
             add_SpeciesGasMassDensity!(data)
@@ -110,14 +110,14 @@ function add_NumberDensityGas!(data::PhantomRevealerDataFrame)
 end
 
 """
-    add_MeanMolecularWeight!(data::PhantomRevealerDataFrame)
+    add_MeanMolecularWeight!(data::ParticleDataFrame)
 Add the mean molecular weight gas particles for each particles. Valid only if `data` with `data.params["PartType"] == "PartType0` (Gas particles) is provided.
 
 # Parameters
-- `data :: PhantomRevealerDataFrame`: The SPH data that is stored in `PhantomRevealerDataFrame` 
+- `data :: ParticleDataFrame`: The SPH data that is stored in `ParticleDataFrame` 
 
 """
-function add_MeanMolecularWeight!(data::PhantomRevealerDataFrame)
+function add_MeanMolecularWeight!(data::ParticleDataFrame)
     if (data.params["PartType"] == "PartType0")
         if !hasproperty(data.dfdata, "nH")
             add_NumberDensityGas!(data)
@@ -157,16 +157,16 @@ function add_MeanMolecularWeight!(data::PhantomRevealerDataFrame)
     end
 end
 """
-    add_GasTemperature!(data::PhantomRevealerDataFrame; adiabatic_index::T = 1.6666666667) where {T<:AbstractFloat}
+    add_GasTemperature!(data::ParticleDataFrame; adiabatic_index::T = 1.6666666667) where {T<:AbstractFloat}
 Add the Gas Temperture for each particles. Valid only if `data` with `data.params["PartType"] == "PartType0` (Gas particles) is provided.
 
 # Parameters
-- `data :: PhantomRevealerDataFrame`: The SPH data that is stored in `PhantomRevealerDataFrame` 
+- `data :: ParticleDataFrame`: The SPH data that is stored in `ParticleDataFrame` 
 
 # Keyword arguments
 - `adiabatic_index :: T = 1.6666666667`: The adiabatic index of system. Default to be non-relativistic monatomic gas(γ = 5/3).
 """
-function add_GasTemperature!(data::PhantomRevealerDataFrame; adiabatic_index::T = 1.6666666667) where {T<:AbstractFloat}
+function add_GasTemperature!(data::ParticleDataFrame; adiabatic_index::T = 1.6666666667) where {T<:AbstractFloat}
     if (data.params["PartType"] == "PartType0")
         if !hasproperty(data.dfdata, "μ")  
             add_MeanMolecularWeight!(data)
@@ -192,13 +192,13 @@ function add_GasTemperature!(data::PhantomRevealerDataFrame; adiabatic_index::T 
 end
 
 """
-    add_DGR!(data::PhantomRevealerDataFrame)
+    add_DGR!(data::ParticleDataFrame)
 Add the total mass of dust and dust-to-gas ratio for each particles. Valid only if `data` with `data.params["PartType"] == "PartType0` (Gas particles) is provided.
 
 # Parameters
-- `data :: PhantomRevealerDataFrame`: The SPH data that is stored in `PhantomRevealerDataFrame` 
+- `data :: ParticleDataFrame`: The SPH data that is stored in `ParticleDataFrame` 
 """
-function add_DGR!(data::PhantomRevealerDataFrame)
+function add_DGR!(data::ParticleDataFrame)
     if (data.params["PartType"] == "PartType0")
         data[!, :md] = data[!, :mC] .+ data[!, :mSi]
         data[!, :DGR] = data[!, :md] ./ data[!, :m]
@@ -211,32 +211,32 @@ end
 
 
 """
-    add_Pressure_adiabetic!(data::PhantomRevealerDataFrame; adiabatic_index::Float64 = 1.6666666667)
+    add_Pressure_adiabetic!(data::ParticleDataFrame; adiabatic_index::Float64 = 1.6666666667)
 Add the pressure of gas particles for each particles. Valid only if `data` with `data.params["PartType"] == "PartType0` (Gas particles) is provided.
 
 # Parameters
-- `data :: PhantomRevealerDataFrame`: The SPH data that is stored in `PhantomRevealerDataFrame` 
+- `data :: ParticleDataFrame`: The SPH data that is stored in `ParticleDataFrame` 
 
 # Keyword arguments
 - `adiabatic_index :: Float64 = 1.6666666667`: The adiabatic index of system. Default to be non-relativistic monatomic gas(γ = 5/3).
 """
-function add_Pressure_adiabetic!(data::PhantomRevealerDataFrame; adiabatic_index::Float64 = 1.6666666667)
+function add_Pressure_adiabetic!(data::ParticleDataFrame; adiabatic_index::Float64 = 1.6666666667)
     if (data.params["PartType"] == "PartType0")
         data[!,"P"] = (adiabatic_index - 1) .* data[!,"rho"] .* data[!,"InternalEnergy"] * 1.0004250399845307   # 10^10 M⊙ kpc^-3 (km/s)^2  => 10^10 M⊙ kpc^-1 Gyr^-2
     end
 end
 
 """
-    add_Soundspeed_adiabetic!(data::PhantomRevealerDataFrame; adiabatic_index::Float64 = 1.6666666667)
+    add_Soundspeed_adiabetic!(data::ParticleDataFrame; adiabatic_index::Float64 = 1.6666666667)
 Add the sound of speed of gas particles for each particles. Valid only if `data` with `data.params["PartType"] == "PartType0` (Gas particles) is provided.
 
 # Parameters
-- `data :: PhantomRevealerDataFrame`: The SPH data that is stored in `PhantomRevealerDataFrame` 
+- `data :: ParticleDataFrame`: The SPH data that is stored in `ParticleDataFrame` 
 
 # Keyword arguments
 - `adiabatic_index :: Float64 = 1.6666666667`: The adiabatic index of system. Default to be non-relativistic monatomic gas(γ = 5/3).
 """
-function add_Soundspeed_adiabetic!(data::PhantomRevealerDataFrame; adiabatic_index::Float64 = 1.6666666667)
+function add_Soundspeed_adiabetic!(data::ParticleDataFrame; adiabatic_index::Float64 = 1.6666666667)
     if (data.params["PartType"] == "PartType0")
         cons = adiabatic_index*(adiabatic_index - 1)
         data[!,"cs"] = sqrt.(cons .* data[!,"InternalEnergy"])  # In the unit of km/s
@@ -244,19 +244,19 @@ function add_Soundspeed_adiabetic!(data::PhantomRevealerDataFrame; adiabatic_ind
 end
 
 """
-    add_adiabatic_constant!(data :: PhantomRevealerDataFrame; adiabatic_index :: Float64 = 1.6666666667)
+    add_adiabatic_constant!(data :: ParticleDataFrame; adiabatic_index :: Float64 = 1.6666666667)
 
 Compute and add the adiabatic (entropy) constant `Aγ = (γ - 1)uρ^(1 - γ)` for each gas particle, where `u` is the internal energy per unit mass and `ρ` is the density. This constant remains invariant for adiabatic processes and characterizes the specific entropy of each fluid element.
 
 # Parameters
-- `data :: PhantomRevealerDataFrame`: The SPH data stored in `PhantomRevealerDataFrame`.
+- `data :: ParticleDataFrame`: The SPH data stored in `ParticleDataFrame`.
 
 # Keyword Arguments
 | Name | Default | Description |
 |:------|:----------|:-------------|
 | `adiabatic_index` | `1.6666666667` | The adiabatic index γ of the gas. Default corresponds to a non-relativistic monatomic ideal gas (γ = 5/3). |
 """
-function add_adiabatic_constant!(data :: PhantomRevealerDataFrame; adiabatic_index :: Float64 = 1.6666666667)
+function add_adiabatic_constant!(data :: ParticleDataFrame; adiabatic_index :: Float64 = 1.6666666667)
     if (data.params["PartType"] == "PartType0")
         cons = (adiabatic_index - 1)
         ργ = data[!, "rho"].^(-cons)
@@ -265,13 +265,13 @@ function add_adiabatic_constant!(data :: PhantomRevealerDataFrame; adiabatic_ind
 end
 
 
-function add_VelocityDivergence!(data :: PhantomRevealerDataFrame)
+function add_VelocityDivergence!(data :: ParticleDataFrame)
     if (data.params["PartType"] == "PartType0")
         
     end
 end
 
-function add_RadiativeCoolingTimescale!(data :: PhantomRevealerDataFrame)
+function add_RadiativeCoolingTimescale!(data :: ParticleDataFrame)
     if (data.params["PartType"] == "PartType0")
     end
 end
