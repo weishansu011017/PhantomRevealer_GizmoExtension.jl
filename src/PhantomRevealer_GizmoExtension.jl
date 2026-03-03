@@ -1,31 +1,30 @@
 module PhantomRevealer_GizmoExtension
 # Include the Julia Module
-# With the order of level
-_module_location = @__DIR__
+using Pkg
+using Reexport
 
-#Level 1 (Package and information)
-include("$_module_location/julia/module_initialization.jl")
+# Tools
+include(joinpath(@__DIR__, "julia", "Tools", "Tools.jl"))
+@reexport using .Tools
 
-const ITP_PRIM  = Ref{Union{Nothing, Interpolations.Extrapolation}}(nothing)
-const ITP_METAL = Ref{Union{Nothing, Interpolations.Extrapolation}}(nothing)
-const ITP_MMW   = Ref{Union{Nothing, Interpolations.Extrapolation}}(nothing)
-#Level 2 (Radiative Cooling table)
-include("$_module_location/julia/radiative_cooling.jl")
+# Chemistry-related tools
+include(joinpath(@__DIR__, "julia", "Chemistry", "Chemistry.jl"))
+@reexport using .Chemistry
 
+# Toolbox for dark matter
+include(joinpath(@__DIR__, "julia", "DarkMatter", "DarkMatter.jl"))
+@reexport using .DarkMatter
 
-#Level 3.5 (Extending PhantomRevealerDataStructures)
-include("$_module_location/julia/add_quantities.jl")
-#Level 4 (Sigal point analysis and File read)
-include("$_module_location/julia/read_gizmo.jl")
-#Level 5 (Estimation tools)
-include("$_module_location/julia/common_tools.jl")
+# Read GIZMO (Chia-Yu Hu Specilized)
+include(joinpath(@__DIR__, "julia", "IO", "IO.jl"))
+@reexport using .IO
 
-assign_cooling_tables(; table = "$_module_location/table/CloudyData_noUVB.h5")
+# Add extra quantities
+include(joinpath(@__DIR__, "julia", "Particles", "Particles.jl"))
+@reexport using .Particles
 
-# Export function, marco, const...
-for name in filter(s -> !startswith(string(s), "#"), names(@__MODULE__, all = true))
-    if !startswith(String(name), "_") && (name != :eval) && (name != :include)
-        @eval export $name
-    end
-end
+# Timescale estimation
+include(joinpath(@__DIR__, "julia", "Timescales", "Timescales.jl"))
+@reexport using .Timescales
+
 end

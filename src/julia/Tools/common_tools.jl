@@ -18,6 +18,3 @@ function Calculate_SFR(datas::ParticleDataFrame,time_interval::Float64=0.0001)
     SFRave *= code2Msunlyr # Transfer from (10^10 M⊙/ 0.978 Gyr) to (M⊙/yr)
     return SFRave
 end
-
-function Calculate_cooling_timescale()
-end

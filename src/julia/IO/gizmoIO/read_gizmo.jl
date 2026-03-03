@@ -13,17 +13,17 @@ function _read_gizmo_base!(data :: ParticleDataFrame, PartGroup :: HDF5.Group; r
     @assert length(pid_src) == Npart
     map!(Int64, data[!, :ParticleIDs], pid_src)  
 
-    coordinate = read(PartGroup, "Coordinates")
-    @assert size(coordinate, 1) == 3
-    data[!, :x] = @view coordinate[1, :]
-    data[!, :y] = @view coordinate[2, :]
-    data[!, :z] = @view coordinate[3, :]
+    coordinate_dset = PartGroup["Coordinates"]
+    @assert size(coordinate_dset, 1) == 3
+    data[!, :x] = coordinate_dset[1, :]
+    data[!, :y] = coordinate_dset[2, :]
+    data[!, :z] = coordinate_dset[3, :]
 
-    velocity = read(PartGroup, "Velocities")
-    @assert size(velocity, 1) == 3
-    data[!, :vx] = @view velocity[1, :]
-    data[!, :vy] = @view velocity[2, :]
-    data[!, :vz] = @view velocity[3, :]
+    velocity_dset = PartGroup["Velocities"]
+    @assert size(velocity_dset, 1) == 3
+    data[!, :vx] = velocity_dset[1, :]
+    data[!, :vy] = velocity_dset[2, :]
+    data[!, :vz] = velocity_dset[3, :]
 
     if haskey(PartGroup, "Masses")
         data[!, :m] = read(PartGroup, "Masses")
@@ -41,29 +41,50 @@ function _read_gizmo_base!(data :: ParticleDataFrame, PartGroup :: HDF5.Group; r
     end    
     data[!, :dt] = read(PartGroup, "TimeStep")
 
-    metadata!(data.dfdata, "coord_parent", coordinate; style = :note)
-    metadata!(data.dfdata, "vel_parent",   velocity;   style = :note)
-
     push!(record_columns, "ParticleIDs", "Coordinates", "Velocities", "Masses", "Density", "SmoothingLength", "TimeStep")
+    return nothing
 end
 
 function _read_gizmo_dust!(data :: ParticleDataFrame, PartGroup :: HDF5.Group; record_columns :: Set{String} = Set{String}())
     if data.params["PartType"] == "PartType0"
-        data[!, :mC] = read(PartGroup, "CarbonDustMass")
-        data[!, :mSi] = read(PartGroup, "SilicateDustMass")
+        mC_dset  = PartGroup["CarbonDustMass"]
+        mSi_dset = PartGroup["SilicateDustMass"]
+
+        @assert ndims(mC_dset) == ndims(mSi_dset)
+        @assert size(mC_dset)  == size(mSi_dset)
+
+        nd = ndims(mC_dset)
+
+        if nd == 1
+            data[!, :mC]  = read(mC_dset)   # Vector length N
+            data[!, :mSi] = read(mSi_dset)
+            data.params["NumDustSpecies"] = 1
+        elseif nd == 2
+            K = size(mC_dset, 1)            # number of dust size bins/species
+            for i in 1:K
+                data[!, Symbol("mC_$(i)")]  = mC_dset[i, :]     # Vector length N
+                data[!, Symbol("mSi_$(i)")] = mSi_dset[i, :]
+            end
+            data.params["NumDustSpecies"] = K
+        else
+            @warn "Skip dust: unsupported ndims=$nd"
+            return nothing
+        end
+
         push!(record_columns, "CarbonDustMass", "SilicateDustMass")
     end
+    return nothing
 end
 
 function _read_gizmo_ChemicalAbundances!(data :: ParticleDataFrame, PartGroup :: HDF5.Group; record_columns :: Set{String} = Set{String}())
     if data.params["PartType"] == "PartType0"
-        χ = read(PartGroup, "ChemicalAbundancesSG")
-        data[!,"χH2"] = @view χ[1,:]            # Defined as nH2/nH
-        data[!,"χH+"] = @view χ[2,:]            # Defined as nH+/nH
-        data[!,"χCO"] = @view χ[3,:]            # Defined as nCO/nH
-        metadata!(data.dfdata, "Chemical_parent", χ; style = :note)
+        χ = PartGroup["ChemicalAbundancesSG"]
+        data[!,"χH2"] = χ[1,:]            # Defined as nH2/nH
+        data[!,"χH+"] = χ[2,:]            # Defined as nH+/nH
+        data[!,"χCO"] = χ[3,:]            # Defined as nCO/nH
         push!(record_columns, "ChemicalAbundancesSG")
     end
+    return nothing
 end
 
 function _read_gizmo_ThermalDynamics!(data :: ParticleDataFrame, PartGroup :: HDF5.Group; record_columns :: Set{String} = Set{String}())
@@ -71,6 +92,7 @@ function _read_gizmo_ThermalDynamics!(data :: ParticleDataFrame, PartGroup :: HD
         data[!, :"InternalEnergy"] = read(PartGroup, "InternalEnergy")
         push!(record_columns, "InternalEnergy")
     end
+    return nothing
 end
 
 """
@@ -106,7 +128,6 @@ function read_gizmo(filename::String;
     Header["udist"] = 3.085678e21    # kpc --> cm
     Header["umass"] = 1.989e43       # 10^10 M⊙ --> g
     Header["utime"] = 3.0842208e16   # 0.978 Gyr --> s
-    Header["uv"] = 1.0e5             # km/s --> cm/s
     Header["umagfd"] = 1.0           # Gauss --> Gauss
 
     # Get the number of particles for each type
@@ -176,16 +197,16 @@ function read_gizmo(filename::String;
                         continue
                     end
 
-                    data = read(PartGroup, dict_key)
-                    size_data = size(data)
+                    dset = PartGroup[dict_key]
+                    size_data = size(dset)
 
                     if length(size_data) == 1
-                        prdf[!, dict_key] = data
+                        prdf[!, dict_key] = read(dset)
                     elseif length(size_data) == 2
                         num_rows = size_data[1]
                         dkeys = [dict_key * "_$n" for n in 1:num_rows]
                         for k in 1:num_rows
-                            prdf[!, dkeys[k]] = data[k, :]
+                            prdf[!, dkeys[k]] = dset[k, :]
                         end
                     end
                 end
@@ -193,13 +214,13 @@ function read_gizmo(filename::String;
                 for column in extra_columns
                     if !(column in ignore_column)
                         if haskey(PartGroup, column)
-                            A = read(PartGroup, column)            # A :: AbstractArray
+                            A = PartGroup[column]
                             if ndims(A) == 1
-                                prdf[!, column] = A
+                                prdf[!, column] = read(A)
                             elseif ndims(A) == 2
                                 K, N = size(A)
                                 for k in 1:K
-                                    prdf[!, string(column, "_", k)] = @view A[k, :]   # SubArray{T,1}
+                                    prdf[!, string(column, "_", k)] = A[k, :] 
                                 end
                             else
                                 @warn "Skip $column: unsupported ndims=$(ndims(A))"
